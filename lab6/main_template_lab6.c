@@ -15,7 +15,102 @@ void initialize();
 void en_interrupts();
 void delay();
 
-int main(void)
+void turnOffAll(){
+		GPIOD_PCOR = (1 << 0);
+		GPIOD_PCOR = (1 << 1);
+		GPIOD_PCOR = (1 << 2);
+		GPIOD_PCOR = (1 << 3);
+}
+
+void turnOnAll(){
+	GPIOD_PSOR = (1 << 0);
+	GPIOD_PSOR = (1 << 1);
+	GPIOD_PSOR = (1 << 2);
+	GPIOD_PSOR = (1 << 3);
+}
+
+int test_main(void){
+	SIM_SCGC5 |= SIM_SCGC5_PORTD_MASK;
+	GPIOD_PDDR = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3);
+	PORTD_PCR0 |= PORT_PCR_MUX(1);				//Enables GPIO mode for PTD0
+	PORTD_PCR1 |= PORT_PCR_MUX(1);				//Enables GPIO mode for PTD1
+	PORTD_PCR2 |= PORT_PCR_MUX(1);				//Enables GPIO mode for PTD2
+	PORTD_PCR3 |= PORT_PCR_MUX(1);				//Enables GPIO mode for PTD3
+	turnOnAll();
+	for(;;);
+}
+
+int stepper_main(void){
+		// Enable clocks on Port D
+	SIM_SCGC5 |= SIM_SCGC5_PORTD_MASK;
+	
+	GPIOD_PDDR = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3);
+
+	PORTD_PCR0 = PORT_PCR_MUX(1);				//Enables GPIO mode for PTD0
+	PORTD_PCR1 = PORT_PCR_MUX(1);				//Enables GPIO mode for PTD1
+	PORTD_PCR2 = PORT_PCR_MUX(1);				//Enables GPIO mode for PTD2
+	PORTD_PCR3 = PORT_PCR_MUX(1);				//Enables GPIO mode for PTD3
+
+	// Configure the Signal Multiplexer for the Port D GPIO Pins
+	// Configure the GPIO Pins for Output
+	int forward = 1;
+	int phase = 0;
+	while ( 1 ){
+		// Turn off all coils , Set GPIO pins to 0
+		
+		turnOffAll();
+		
+		// Set one pin high at a time
+		if( forward ){
+			if( phase == 0){ turnOffAll(); GPIOD_PSOR = (1 << 0); phase ++;} //A, 1a
+			else if( phase == 1){ turnOffAll(); GPIOD_PSOR = (1 << 1); phase ++;} //B ,2a
+			else if ( phase == 2) { turnOffAll(); GPIOD_PSOR = (1 << 2); phase ++;} //C ,1b
+			else { turnOffAll(); GPIOD_PSOR = (1 << 3); phase =0;} //D ,2b
+		}
+		else {// reverse
+			if ( phase == 0) { turnOffAll(); GPIOD_PSOR |= (1 << 3); phase ++;} //D ,2b
+			else if ( phase == 1) { turnOffAll(); GPIOD_PSOR |= (1 << 2); phase ++;} //C ,1b
+			else if ( phase == 2) { turnOffAll(); GPIOD_PSOR |= (1 << 1); phase ++;} //B ,2a
+			else { turnOffAll(); GPIOD_PSOR |= (1 << 0); phase =0;} //A ,1a
+		}
+		// Note - you need to write your own delay function
+		delay (10); // smaller values = faster speed
+	}
+
+}
+
+int main(void){
+	// Initialize UART and PWM
+	initialize();
+
+	// Print welcome over serial
+	put("Running... \n\r");
+	
+	//Step 3
+	//SetDutyCycle(20, 10000, 1);
+
+	//for(;;) ;  //then loop forever
+	
+	//Step 9
+	for(;;)  //loop forever
+	{
+		uint16_t dc = 0;
+		uint16_t freq = 10000; /* Frequency = 10 kHz */
+		uint16_t dir = 1;
+		char c = 48;
+		int i=0;
+		
+		// 0 to 100% duty cycle in forward direction
+		for (;;){
+			SetDutyCycle(50, freq, dir);
+			SetServoDutyCycle(10, 50, 0);
+			delay(10);
+		}
+	return 0;
+}
+}
+
+int first_main(void)
 {
 	// Initialize UART and PWM
 	initialize();
@@ -85,4 +180,6 @@ void initialize()
 	
 	// Initialize the FlexTimer
 	InitPWM();
+	
+	InitServoPWM();
 }
