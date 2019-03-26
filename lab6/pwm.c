@@ -31,10 +31,13 @@ void SetDutyCycle(unsigned int DutyCycle, unsigned int Frequency, int dir)
 	uint16_t mod = (uint16_t) (((CLOCK/Frequency) * DutyCycle) / 100);
   
 	// Set outputs 
-	if(dir==1)
-    {FTM0_C3V = mod; FTM0_C2V=0;}
+	if(dir==1){
+		FTM0_C3V = mod; FTM0_C2V=0;
+		FTM0_C0V = mod; FTM0_C1V=0;
+	}
   else
-    {FTM0_C2V = mod; FTM0_C3V=0;}
+    {FTM0_C2V = mod; FTM0_C3V=0;
+		 FTM0_C1V = mod; FTM0_C0V=0;}
 
 	// Update the clock to the new frequency
 	FTM0_MOD = (CLOCK/Frequency);
@@ -44,7 +47,7 @@ void SetServoDutyCycle(unsigned int DutyCycle, unsigned int Frequency, int dir){
 	// Calculate the new cutoff value
 	uint16_t mod = (uint16_t) ((((CLOCK/128)/Frequency) * DutyCycle) / 100);
   
-    FTM3_C1V = mod;//PTD1
+    FTM3_C4V = mod;//PTD1
 
 	// Update the clock to the new frequency
 	FTM3_MOD = ((CLOCK/128)/Frequency);
@@ -68,6 +71,9 @@ void InitPWM()
 	
     PORTC_PCR3  = PORT_PCR_MUX(4)  | PORT_PCR_DSE_MASK; //Ch2
     PORTC_PCR4  = PORT_PCR_MUX(4)  | PORT_PCR_DSE_MASK;//Ch3
+		
+		PORTC_PCR1 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;//ch0
+		PORTC_PCR2 = PORT_PCR_MUX(4) | PORT_PCR_DSE_MASK;//ch1
 	
 	// 39.3.10 Disable Write Protection
 	FTM0_MODE |= FTM_MODE_WPDIS_MASK;
@@ -92,6 +98,16 @@ void InitPWM()
 	// See Table 39-67,  Edge-aligned PWM, Low-true pulses (clear out on match)
 	FTM0_C2SC |= FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;
 	FTM0_C2SC &= ~FTM_CnSC_ELSA_MASK;
+	
+	// 39.3.6 Set the Status and Control of both channels
+	// Used to configure mode, edge and level selection
+	// See Table 39-67,  Edge-aligned PWM, High-true pulses (clear out on match)
+	FTM0_C0SC |= FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;
+	FTM0_C0SC &= ~FTM_CnSC_ELSA_MASK;
+	
+	// See Table 39-67,  Edge-aligned PWM, Low-true pulses (clear out on match)
+	FTM0_C1SC |= FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;
+	FTM0_C1SC &= ~FTM_CnSC_ELSA_MASK;
 	
 	// 39.3.3 FTM Setup
 	// Set prescale value to 1 
@@ -120,7 +136,7 @@ void InitServoPWM()
 	// Use drive strength enable flag to high drive strength
 	//These port/pins may need to be updated for the K64 <Yes, they do. Here are two that work.>
 	
-  PORTD_PCR1  = PORT_PCR_MUX(4)  | PORT_PCR_DSE_MASK; //Ch2
+  PORTC_PCR8  = PORT_PCR_MUX(3)  | PORT_PCR_DSE_MASK; //Ch4
 	
 	// 39.3.10 Disable Write Protection
 	FTM3_MODE |= FTM_MODE_WPDIS_MASK;
@@ -139,8 +155,8 @@ void InitServoPWM()
 	// 39.3.6 Set the Status and Control of both channels
 	// Used to configure mode, edge and level selection
 	// See Table 39-67,  Edge-aligned PWM, High-true pulses (clear out on match)
-	FTM3_C1SC |= FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;
-	FTM3_C1SC &= ~FTM_CnSC_ELSA_MASK;
+	FTM3_C4SC |= FTM_CnSC_MSB_MASK | FTM_CnSC_ELSB_MASK;
+	FTM3_C4SC &= ~FTM_CnSC_ELSA_MASK;
 	
 	// 39.3.3 FTM Setup
 	// Set prescale value to 1 

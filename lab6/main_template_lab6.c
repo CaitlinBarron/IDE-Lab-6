@@ -98,13 +98,21 @@ int main(void){
 		uint16_t freq = 10000; /* Frequency = 10 kHz */
 		uint16_t dir = 1;
 		char c = 48;
-		int i=0;
+		int i=5;
+		int j=1;
 		
 		// 0 to 100% duty cycle in forward direction
 		for (;;){
-			SetDutyCycle(50, freq, dir);
-			SetServoDutyCycle(10, 50, 0);
-			delay(10);
+			SetDutyCycle(25, freq, dir);
+			SetServoDutyCycle(i, 50, 0);
+			i+=j;
+			if ( i >= 10){
+				j = -1;
+			}
+			else if( i <=5){
+				j = 1;
+			}
+			delay(100);
 		}
 	return 0;
 }
@@ -173,6 +181,23 @@ void delay(int del){
 	}
 }
 
+void motor_shield_init(){
+	//enable PORTB clock
+	SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;
+	
+	//Set to output mode
+	GPIOB_PDDR |= ((1 << 2) | (1 << 3));
+	
+	//enable H bridge
+	PORTB_PCR2 = PORT_PCR_MUX(1);
+	PORTB_PCR3 = PORT_PCR_MUX(1);
+	
+	//Set to high to enable H bridge
+	GPIOB_PSOR |= ((1 << 2) | (1 << 3));
+	
+	
+}
+
 void initialize()
 {
 	// Initialize UART
@@ -182,4 +207,6 @@ void initialize()
 	InitPWM();
 	
 	InitServoPWM();
+	
+	motor_shield_init();
 }
